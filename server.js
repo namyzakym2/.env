@@ -18,13 +18,13 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
-let discordClient: Client | null = null;
+let discordClient = null;
 let isUsernameSniperActive = false;
-let targetUsernames: string[] = [];
+let targetUsernames = [];
 let targetUserId = "";
-let sniperLogs: { id: string; message: string; type: "info" | "success" | "error" | "warning"; timestamp: number }[] = [];
+let sniperLogs = [];
 
-const addLog = (message: string, type: "info" | "success" | "error" | "warning" = "info") => {
+const addLog = (message, type = "info") => {
   const log = {
     id: Math.random().toString(36).substring(7),
     message,
@@ -36,7 +36,7 @@ const addLog = (message: string, type: "info" | "success" | "error" | "warning" 
   io.emit("log", log);
 };
 
-const sendToTarget = async (message: string) => {
+const sendToTarget = async (message) => {
   if (!targetUserId || !discordClient) return;
   try {
     const user = await discordClient.users.fetch(targetUserId);
@@ -44,13 +44,13 @@ const sendToTarget = async (message: string) => {
       await user.send(message);
       addLog(`Sent notification to Target ID (${targetUserId})`, "success");
     }
-  } catch (error: any) {
+  } catch (error) {
     addLog(`Failed to send DM to Target ID: ${error.message}`, "error");
   }
 };
 
 // Discord Logic
-const startDiscord = (token: string) => {
+const startDiscord = (token) => {
   if (discordClient) {
     discordClient.destroy();
   }
@@ -77,9 +77,9 @@ const startDiscord = (token: string) => {
 };
 
 // Username Sniper Logic
-let usernameInterval: NodeJS.Timeout | null = null;
+let usernameInterval = null;
 
-const checkUsernames = async (token: string) => {
+const checkUsernames = async (token) => {
   if (!isUsernameSniperActive || targetUsernames.length === 0) return;
 
   for (const username of targetUsernames) {
@@ -106,7 +106,7 @@ const checkUsernames = async (token: string) => {
       } else {
         // addLog(`Username ${username} is taken.`, "info");
       }
-    } catch (error: any) {
+    } catch (error) {
       if (error.response?.status === 429) {
         addLog("Rate limited on username checks. Waiting...", "warning");
         break; 
@@ -128,7 +128,7 @@ app.get("/api/status", (req, res) => {
 let isRandomModeActive = false;
 let targetUsernameLength = 3;
 
-const generateRandomString = (length: number) => {
+const generateRandomString = (length) => {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let result = "";
   for (let i = 0; i < length; i++) {
@@ -137,7 +137,7 @@ const generateRandomString = (length: number) => {
   return result;
 };
 
-const generateRandomUsername = (length: number) => {
+const generateRandomUsername = (length) => {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789._";
   let result = "";
   for (let i = 0; i < length; i++) {
@@ -146,7 +146,7 @@ const generateRandomUsername = (length: number) => {
   return result;
 };
 
-const runRandomSniper = async (token: string) => {
+const runRandomSniper = async (token) => {
   if (!isRandomModeActive) return;
 
   // Random Username Attempt
@@ -167,11 +167,11 @@ const runRandomSniper = async (token: string) => {
           await sendToTarget(`🚀 Available Random Username Found: ${randomUser}`);
         }
       }
-    } catch (error: any) {}
+    } catch (error) {}
   }
 };
 
-let randomInterval: NodeJS.Timeout | null = null;
+let randomInterval = null;
 
 app.post("/api/config", (req, res) => {
   const { username, usernames, randomMode, usernameLength, targetUserId: newTargetId } = req.body;

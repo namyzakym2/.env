@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Shield, 
@@ -19,16 +19,15 @@ import {
   Eye,
   EyeOff
 } from "lucide-react";
-import { Log, SniperConfig, Status } from "./types";
 
-const socket: Socket = io();
+const socket = io();
 
 export default function App() {
   const [token, setToken] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const [status, setStatus] = useState<Status>({ connected: false });
-  const [logs, setLogs] = useState<Log[]>([]);
-  const [config, setConfig] = useState<SniperConfig>({
+  const [status, setStatus] = useState({ connected: false });
+  const [logs, setLogs] = useState([]);
+  const [config, setConfig] = useState({
     username: false,
     usernames: ["test1", "test2"],
     randomMode: false,
@@ -36,14 +35,14 @@ export default function App() {
     targetUserId: "",
   });
   const [newUsername, setNewUsername] = useState("");
-  const logEndRef = useRef<HTMLDivElement>(null);
+  const logEndRef = useRef(null);
 
   useEffect(() => {
-    socket.on("log", (log: Log) => {
+    socket.on("log", (log) => {
       setLogs((prev) => [...prev, log].slice(-100));
     });
 
-    socket.on("status", (newStatus: Status) => {
+    socket.on("status", (newStatus) => {
       setStatus(newStatus);
     });
 
@@ -81,7 +80,7 @@ export default function App() {
     }
   };
 
-  const updateConfig = async (newConfig: Partial<SniperConfig>) => {
+  const updateConfig = async (newConfig) => {
     const updated = { ...config, ...newConfig };
     setConfig(updated);
     try {
@@ -102,7 +101,7 @@ export default function App() {
     }
   };
 
-  const removeUsername = (name: string) => {
+  const removeUsername = (name) => {
     updateConfig({ usernames: config.usernames.filter((u) => u !== name) });
   };
 
