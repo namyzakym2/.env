@@ -1,0 +1,5 @@
+{
+  "name": "Discord Sniper Dashboard",
+  "description": "A powerful dashboard for sniping Discord Nitro and rare usernames. Features real-time logs and automated checks.",
+  "requestFramePermissions": []
+}
