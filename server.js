@@ -4,14 +4,20 @@ import { Server } from "socket.io";
 import { Client } from "discord.js-selfbot-v13";
 import axios from "axios";
 import path from "path";
-import { createServer as createViteServer } from "vite";
+import { createServer as createViteServer, build as viteBuild } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import cors from "cors";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: ["https://fi10.bot-hosting.net:21534", "http://localhost:3000", "*"],
+    methods: ["GET", "POST"]
   },
 });
 
@@ -203,17 +209,46 @@ app.post("/api/config", (req, res) => {
   res.json({ status: "Config updated" });
 });
 
+app.post("/api/connect", (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: "Token is required" });
+  addLog("Manual connection attempt...", "info");
+  startDiscord(token);
+  res.json({ status: "Connection initiated" });
+});
+
 app.get("/api/logs", (req, res) => {
   res.json(sniperLogs);
 });
 
 // Vite Middleware
 async function startServer() {
+  const viteConfig = {
+    configFile: false,
+    server: { 
+      middlewareMode: true,
+      host: true,
+      allowedHosts: true,
+      hmr: process.env.DISABLE_HMR !== 'true',
+    },
+    appType: "spa",
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': path.resolve(process.cwd(), '.'),
+      },
+    },
+  };
+
+  if (process.argv.includes("--build")) {
+    console.log("Starting production build...");
+    await viteBuild(viteConfig);
+    console.log("Build completed successfully!");
+    process.exit(0);
+  }
+
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
+    const vite = await createViteServer(viteConfig);
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
@@ -223,9 +258,10 @@ async function startServer() {
     });
   }
 
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
   httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
+    addLog(`Server started on port ${PORT}`, "info");
     
     // Auto-connect if token is provided
     const token = process.env.DISCORD_TOKEN;
